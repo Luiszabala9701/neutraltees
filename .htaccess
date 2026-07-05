@@ -1,0 +1,15 @@
+## Seguridad basica para Apache/XAMPP.
+## Evita listados de carpetas y bloquea archivos/configuraciones sensibles.
+Options -Indexes
+DirectoryIndex index.php
+
+## Composer y credenciales no deben descargarse desde el navegador.
+<FilesMatch "^(composer\.(json|lock)|credenciales_admin\.txt)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    ## Carpetas internas: solo PHP debe usarlas, no el acceso publico directo.
+    RewriteRule ^(config|DB|vendor|includes)(/|$) - [F,L]
+</IfModule>

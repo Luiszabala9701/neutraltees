@@ -1,0 +1,23 @@
+# Archivos internos de Git/Codex o entorno local
+.agents/
+.codex/
+
+# Logs y archivos generados en ejecucion
+logs/
+*.log
+
+# Paquetes comprimidos para despliegue
+*.zip
+*.rar
+*.7z
+
+# Credenciales reales y datos sensibles
+config/conexion_DB.php
+config/mail.php
+credenciales_admin.txt
+
+# Archivos temporales del sistema/editor
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
