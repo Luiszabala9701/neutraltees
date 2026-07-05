@@ -84,6 +84,7 @@ $menuCuentaAbierto = in_array($rutaActualAdmin, ['seguridad.php', 'ayuda.php'], 
                     <div class="menu-admin__subenlaces">
                         <a class="menu-admin__subenlace" href="/admin/cupon_formulario.php">Crear cupón</a>
                         <a class="menu-admin__subenlace" href="/admin/cupones.php">Cupones activos</a>
+                        <a class="menu-admin__subenlace" href="/admin/cupones.php?vista=archivados">Cupones archivados</a>
                     </div>
                 </details>
                 <a class="menu-admin__enlace" href="/admin/usuarios.php">Usuarios</a>

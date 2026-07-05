@@ -125,14 +125,22 @@ if (es_post()) {
         $errores[] = 'La fecha de fin debe ser mayor a la fecha de inicio.';
     }
 
-    $sentenciaCodigo = $conexion->prepare('SELECT id_cupon FROM cupon WHERE codigo = :codigo AND id_cupon <> :id_cupon LIMIT 1');
+    $sentenciaCodigo = $conexion->prepare(
+        'SELECT id_cupon
+         FROM cupon
+         WHERE codigo = :codigo
+           AND id_cupon <> :id_cupon
+           AND activo = 1
+           AND (fecha_fin IS NULL OR fecha_fin >= CURDATE())
+         LIMIT 1'
+    );
     $sentenciaCodigo->execute([
         ':codigo' => $datos['codigo'],
         ':id_cupon' => $idCupon,
     ]);
 
     if ($sentenciaCodigo->fetchColumn()) {
-        $errores[] = 'Ya existe un cupón con ese código.';
+        $errores[] = 'Ya existe un cupon activo con ese codigo.';
     }
 
     if ($errores === []) {

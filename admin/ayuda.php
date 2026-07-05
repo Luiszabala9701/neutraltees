@@ -61,7 +61,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
 
         <article class="tarjeta-resumen">
             <h2 class="tarjeta-formulario__texto u-mb-0">Cupones</h2>
-            <p class="tarjeta-resumen__texto">Desde Crear cupon podes cargar descuentos. En Cupones activos podes revisar los disponibles y dar de baja los que ya no quieras ofrecer.</p>
+            <p class="tarjeta-resumen__texto">Desde Crear cupon podes cargar descuentos. En Cupones activos podes revisar los disponibles y dar de baja los que ya no quieras ofrecer. Los cupones vencidos o dados de baja quedan en Cupones archivados.</p>
         </article>
 
         <article class="tarjeta-resumen">
