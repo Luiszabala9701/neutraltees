@@ -10,6 +10,8 @@ require_once __DIR__ . '/config/funciones_mail.php';
 $conexion = obtener_conexion_db();
 
 if (usuario_actual()) {
+    validar_sesion_unica($conexion);
+
     if (es_admin()) {
         redirigir('/admin/index.php');
     }
@@ -48,15 +50,7 @@ if (es_post()) {
         redirigir('/verificar_email.php');
         }
     } else {
-        $_SESSION['usuario_actual'] = [
-            'id_usuario' => (int) $usuario['id_usuario'],
-            'nombre' => $usuario['nombre'],
-            'apellido' => $usuario['apellido'],
-            'mail' => $usuario['mail'],
-            'is_admin' => (int) $usuario['is_admin'] === 1,
-            'email_verificado' => true,
-        ];
-        registrar_actividad_sesion();
+        iniciar_sesion_usuario($conexion, $usuario);
 
         guardar_flash('mensaje_exito', 'Inicio de sesión exitoso.');
 

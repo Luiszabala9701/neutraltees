@@ -19,6 +19,10 @@ foreach ($sinCache as $cabecera) {
 }
 
 // Datos compartidos por el menu superior en todas las paginas publicas.
+if (usuario_actual()) {
+    validar_sesion_unica($conexion);
+}
+
 $usuarioActual = usuario_actual();
 $cantidadCarrito = obtener_cantidad_carrito();
 $flashExito = obtener_flash('mensaje_exito');

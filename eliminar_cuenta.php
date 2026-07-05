@@ -34,6 +34,11 @@ if (es_admin()) {
 }
 
 dar_baja_cuenta_usuario($conexion, $idUsuario);
-$_SESSION = [];
+destruir_sesion_actual();
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 guardar_flash('mensaje_exito', 'Tu cuenta fue eliminada correctamente.');
 redirigir('/login.php');

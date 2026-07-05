@@ -1,6 +1,4 @@
-﻿<?php
-
-
+<?php declare(strict_types=1);
 
 /**
  * Modulo: funciones compartidas.
@@ -392,6 +390,121 @@ function usuario_actual(): ?array
 }
 
 /**
+ * Crea un token nuevo para dejar una sola sesion valida por usuario.
+ * Si la cuenta inicia sesion en otro navegador, este valor reemplaza al anterior.
+ */
+function crear_token_sesion_usuario(PDO $conexion, int $idUsuario): string
+{
+    $token = bin2hex(random_bytes(32));
+    $sentencia = $conexion->prepare(
+        'UPDATE usuario
+         SET sesion_activa_token = :token,
+             fecha_actualizacion = NOW()
+         WHERE id_usuario = :id_usuario'
+    );
+    $sentencia->execute([
+        ':token' => $token,
+        ':id_usuario' => $idUsuario,
+    ]);
+
+    return $token;
+}
+
+/**
+ * Guarda los datos basicos del usuario en sesion junto con el token activo.
+ */
+function iniciar_sesion_usuario(PDO $conexion, array $usuario): void
+{
+    $idUsuario = (int) $usuario['id_usuario'];
+    $tokenSesion = crear_token_sesion_usuario($conexion, $idUsuario);
+
+    $_SESSION['usuario_actual'] = [
+        'id_usuario' => $idUsuario,
+        'nombre' => $usuario['nombre'],
+        'apellido' => $usuario['apellido'],
+        'mail' => $usuario['mail'],
+        'is_admin' => (int) $usuario['is_admin'] === 1,
+        'email_verificado' => (int) ($usuario['email_verificado'] ?? 0) === 1,
+        'sesion_token' => $tokenSesion,
+    ];
+
+    registrar_actividad_sesion();
+}
+
+/**
+ * Limpia el token activo solo si coincide con la sesion que esta cerrando.
+ * Asi una sesion vieja no puede cerrar la sesion nueva abierta en otro equipo.
+ */
+function invalidar_token_sesion_actual(PDO $conexion): void
+{
+    $usuario = usuario_actual();
+
+    if (!$usuario) {
+        return;
+    }
+
+    $idUsuario = (int) ($usuario['id_usuario'] ?? 0);
+    $tokenSesion = (string) ($usuario['sesion_token'] ?? '');
+
+    if ($idUsuario <= 0 || $tokenSesion === '') {
+        return;
+    }
+
+    $sentencia = $conexion->prepare(
+        'UPDATE usuario
+         SET sesion_activa_token = NULL,
+             fecha_actualizacion = NOW()
+         WHERE id_usuario = :id_usuario
+           AND sesion_activa_token = :token'
+    );
+    $sentencia->execute([
+        ':id_usuario' => $idUsuario,
+        ':token' => $tokenSesion,
+    ]);
+}
+
+/**
+ * Verifica que la sesion actual siga siendo la ultima sesion iniciada.
+ */
+function validar_sesion_unica(PDO $conexion): void
+{
+    $usuario = usuario_actual();
+
+    if (!$usuario) {
+        return;
+    }
+
+    $idUsuario = (int) ($usuario['id_usuario'] ?? 0);
+    $tokenSesion = (string) ($usuario['sesion_token'] ?? '');
+
+    if ($idUsuario <= 0 || $tokenSesion === '') {
+        destruir_sesion_actual();
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        guardar_flash('mensaje_error', 'Tu sesion ya no es valida. Volve a iniciar sesion.');
+        redirigir('/login.php');
+    }
+
+    $sentencia = $conexion->prepare('SELECT activo, sesion_activa_token FROM usuario WHERE id_usuario = :id_usuario LIMIT 1');
+    $sentencia->execute([':id_usuario' => $idUsuario]);
+    $datosUsuario = $sentencia->fetch(PDO::FETCH_ASSOC);
+
+    if (!$datosUsuario || (int) $datosUsuario['activo'] !== 1 || !hash_equals((string) $datosUsuario['sesion_activa_token'], $tokenSesion)) {
+        destruir_sesion_actual();
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        guardar_flash('mensaje_error', 'Tu cuenta se inicio en otro dispositivo. Volve a iniciar sesion para continuar.');
+        redirigir('/login.php');
+    }
+}
+
+/**
  * Indica si el usuario actual tiene rol administrador.
  */
 function es_admin(): bool
@@ -408,6 +521,8 @@ function requiere_login(): void
         guardar_flash('mensaje_error', 'Debés iniciar sesión para continuar.');
         redirigir('/login.php');
     }
+
+    validar_sesion_unica(obtener_conexion_db());
 }
 
 /**
@@ -419,6 +534,8 @@ function requiere_admin(): void
         guardar_flash('mensaje_error', 'Debés iniciar sesión como administrador.');
         redirigir('/login.php');
     }
+
+    validar_sesion_unica(obtener_conexion_db());
 
     if (!es_admin()) {
         guardar_flash('mensaje_error', 'No tenés permisos para acceder a esta sección.');
@@ -470,7 +587,9 @@ function dar_baja_cuenta_usuario(PDO $conexion, int $idUsuario): void
 {
     $sentencia = $conexion->prepare(
         'UPDATE usuario
-         SET activo = 0, fecha_actualizacion = NOW()
+         SET activo = 0,
+             sesion_activa_token = NULL,
+             fecha_actualizacion = NOW()
          WHERE id_usuario = :id_usuario'
     );
     $sentencia->execute([':id_usuario' => $idUsuario]);

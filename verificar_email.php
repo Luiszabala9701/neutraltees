@@ -72,15 +72,7 @@ if (es_post()) {
                 unset($_SESSION['verificacion_email_pendiente']);
 
                 if ($usuarioVerificado) {
-                    $_SESSION['usuario_actual'] = [
-                        'id_usuario' => (int) $usuarioVerificado['id_usuario'],
-                        'nombre' => $usuarioVerificado['nombre'],
-                        'apellido' => $usuarioVerificado['apellido'],
-                        'mail' => $usuarioVerificado['mail'],
-                        'is_admin' => (int) $usuarioVerificado['is_admin'] === 1,
-                        'email_verificado' => true,
-                    ];
-                    registrar_actividad_sesion();
+                    iniciar_sesion_usuario($conexion, $usuarioVerificado);
                 }
 
                 guardar_flash('mensaje_exito', 'Correo verificado correctamente. Iniciaste sesion.');
