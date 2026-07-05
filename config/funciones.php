@@ -1,12 +1,12 @@
 ﻿<?php
 
+
+
 /**
  * Modulo: funciones compartidas.
  * Responsabilidad: centralizar utilidades de sesion, seguridad, carrito,
  * catalogo, pedidos, cupones, stock y codigos temporales.
  */
-
-declare(strict_types=1);
 
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
