@@ -60,7 +60,7 @@ if (es_post()) {
         'descripcion' => limpiar_entrada((string) ($_POST['descripcion'] ?? '')),
         'tipo_descuento' => limpiar_entrada((string) ($_POST['tipo_descuento'] ?? '')),
         'valor' => limpiar_entrada((string) ($_POST['valor'] ?? '')),
-        'compra_minima' => limpiar_entrada((string) ($_POST['compra_minima'] ?? '0')),
+        'compra_minima' => limpiar_entrada((string) ($_POST['compra_minima'] ?? '')),
         'tope_descuento' => limpiar_entrada((string) ($_POST['tope_descuento'] ?? '')),
         'max_usos_total' => limpiar_entrada((string) ($_POST['max_usos_total'] ?? '')),
         'fecha_inicio' => limpiar_entrada((string) ($_POST['fecha_inicio'] ?? '')),
@@ -101,7 +101,11 @@ if (es_post()) {
         $errores[] = 'El porcentaje no puede superar el 100%.';
     }
 
-    if ($compraMinima < 0) {
+    if ($datos['compra_minima'] === '') {
+        $errores[] = 'Completa la compra minima del cupon.';
+    }
+
+    if ($datos['compra_minima'] !== '' && $compraMinima < 0) {
         $errores[] = 'La compra mínima no puede ser negativa.';
     }
 
@@ -229,7 +233,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
 
                 <div class="grupo-campo">
                     <label for="compra_minima">Compra mínima</label>
-                    <input class="campo-texto" id="compra_minima" type="number" name="compra_minima" step="0.01" min="0" value="<?php echo sanear_texto($datos['compra_minima']); ?>">
+                    <input class="campo-texto" id="compra_minima" type="number" name="compra_minima" step="0.01" min="0" required value="<?php echo sanear_texto($datos['compra_minima']); ?>">
                 </div>
             </div>
 
