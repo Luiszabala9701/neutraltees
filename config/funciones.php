@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * Modulo: funciones compartidas.
@@ -113,7 +113,7 @@ function destruir_sesion_actual(): void
  */
 function tiempo_limite_inactividad_sesion(): int
 {
-    return 150;
+    return 600;
 }
 
 /**

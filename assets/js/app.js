@@ -1075,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarVariantesDeProducto();
     }
 
-    // Cierra la sesion si pasan 3 minutos sin actividad en el navegador.
+    // Cierra la sesion si pasan 10 minutos sin actividad en el navegador.
     const controlInactividad = document.body.hasAttribute('data-control-inactividad');
     const tiempoInactividadSegundos = Number(document.body.dataset.tiempoInactividad || 0);
 
