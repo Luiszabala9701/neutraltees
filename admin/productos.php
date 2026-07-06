@@ -2,77 +2,132 @@
 
 /**
  * Modulo: listado de productos admin.
- * Responsabilidad: ver productos, acceder a modificacion y dar de baja.
+ * Responsabilidad: ver productos activos/inactivos y dar de baja productos sin borrar historial.
  */
 
 require_once __DIR__ . '/../config/conexion_DB.php';
 $conexion = obtener_conexion_db();
 requiere_admin();
 
+$vistasPermitidas = ['activos', 'inactivos'];
+$vista = limpiar_entrada((string) ($_POST['vista'] ?? $_GET['vista'] ?? 'activos'));
+
+if (!in_array($vista, $vistasPermitidas, true)) {
+    $vista = 'activos';
+}
+
+function construir_ruta_productos(string $vista = 'activos'): string
+{
+    return '/admin/productos.php?vista=' . urlencode($vista);
+}
+
 if (es_post()) {
-    $accion = trim(strip_tags((string) ($_POST['accion'] ?? '')));
+    $accion = limpiar_entrada((string) ($_POST['accion'] ?? ''));
     $idProducto = (int) ($_POST['id_producto'] ?? 0);
 
-    if ($accion === 'eliminar' && $idProducto > 0) {
+    if ($idProducto > 0 && in_array($accion, ['dar_baja', 'activar'], true)) {
+        $estadoProducto = $accion === 'activar' ? 'disponible' : 'inactivo';
+        $estadoVariantes = $accion === 'activar' ? 'activo' : 'inactivo';
+
         try {
             $conexion->beginTransaction();
-            $sentenciaVariantes = $conexion->prepare('SELECT id_variante FROM producto_variante WHERE id_producto = :id_producto');
-            $sentenciaVariantes->execute([':id_producto' => $idProducto]);
-            $idsVariantes = $sentenciaVariantes->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
-            if ($idsVariantes !== []) {
-                $marcadores = implode(',', array_fill(0, count($idsVariantes), '?'));
-                $sentenciaVariantesEliminar = $conexion->prepare("DELETE FROM producto_variante WHERE id_variante IN ($marcadores)");
-                $sentenciaVariantesEliminar->execute($idsVariantes);
-            }
+            $sentenciaProducto = $conexion->prepare(
+                'UPDATE producto
+                 SET estado = :estado,
+                     fecha_actualizacion = NOW()
+                 WHERE id_producto = :id_producto'
+            );
+            $sentenciaProducto->execute([
+                ':estado' => $estadoProducto,
+                ':id_producto' => $idProducto,
+            ]);
 
-            $sentenciaProducto = $conexion->prepare('DELETE FROM producto WHERE id_producto = :id_producto');
-            $sentenciaProducto->execute([':id_producto' => $idProducto]);
+            $sentenciaVariantes = $conexion->prepare(
+                'UPDATE producto_variante
+                 SET estado = :estado,
+                     fecha_actualizacion = NOW()
+                 WHERE id_producto = :id_producto'
+            );
+            $sentenciaVariantes->execute([
+                ':estado' => $estadoVariantes,
+                ':id_producto' => $idProducto,
+            ]);
 
             $conexion->commit();
-            guardar_flash('mensaje_exito', 'Producto eliminado.');
+
+            guardar_flash(
+                'mensaje_exito',
+                $accion === 'activar'
+                    ? 'Producto activado correctamente.'
+                    : 'Producto dado de baja correctamente. Sus variantes tambien quedaron inactivas.'
+            );
         } catch (Throwable $ex) {
             if ($conexion->inTransaction()) {
                 $conexion->rollBack();
             }
 
-            registrar_error_sistema('No se pudo eliminar el producto', $ex->getMessage());
-            $sentencia = $conexion->prepare('UPDATE producto SET estado = :estado, fecha_actualizacion = NOW() WHERE id_producto = :id_producto');
-            $sentencia->execute([':estado' => 'inactivo', ':id_producto' => $idProducto]);
-            $conexion->prepare('UPDATE producto_variante SET estado = :estado, fecha_actualizacion = NOW() WHERE id_producto = :id_producto')
-                ->execute([':estado' => 'inactivo', ':id_producto' => $idProducto]);
-            guardar_flash('mensaje_error', 'No se pudo eliminar de forma permanente porque tiene datos relacionados (por ejemplo, pedidos). Se desactivó el producto.');
+            registrar_error_sistema('No se pudo cambiar el estado del producto', $ex->getMessage());
+            guardar_flash('mensaje_error', 'No se pudo actualizar el estado del producto.');
         }
 
-        redirigir('/admin/productos.php');
+        redirigir(construir_ruta_productos($vista));
     }
 }
 
-$productos = obtener_productos($conexion, '', false);
+$todosLosProductos = obtener_productos($conexion, '', false);
+$totalActivos = count(array_filter($todosLosProductos, static function (array $producto): bool {
+    return (string) $producto['estado'] === 'disponible';
+}));
+$totalInactivos = count(array_filter($todosLosProductos, static function (array $producto): bool {
+    return (string) $producto['estado'] !== 'disponible';
+}));
+
+$productos = array_values(array_filter($todosLosProductos, static function (array $producto) use ($vista): bool {
+    $estaActivo = (string) $producto['estado'] === 'disponible';
+    return $vista === 'activos' ? $estaActivo : !$estaActivo;
+}));
+
 require_once __DIR__ . '/../includes/cabecera_admin.php';
 ?>
 
 <header class="encabezado-panel">
-    <h1>Modificación de Producto</h1>
-    <p>Editar productos existentes</p>
+    <h1><?php echo $vista === 'inactivos' ? 'Productos inactivos' : 'Modificacion de Producto'; ?></h1>
+    <p><?php echo $vista === 'inactivos' ? 'Productos retirados del catalogo' : 'Editar productos existentes'; ?></p>
 </header>
 
 <section class="panel-seccion">
+    <div class="pedidos-panel usuarios-panel-filtros">
+        <div class="pedidos-panel__barra">
+            <div class="pedidos-pestanas" aria-label="Vistas de productos">
+                <a class="pedidos-pestanas__enlace <?php echo $vista === 'activos' ? 'is-activo' : ''; ?>" href="<?php echo construir_ruta_productos('activos'); ?>">
+                    Activos <span><?php echo $totalActivos; ?></span>
+                </a>
+                <a class="pedidos-pestanas__enlace <?php echo $vista === 'inactivos' ? 'is-activo' : ''; ?>" href="<?php echo construir_ruta_productos('inactivos'); ?>">
+                    Inactivos <span><?php echo $totalInactivos; ?></span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <?php if ($productos === []): ?>
-        <div class="contenido-vacio-admin">Todavía no hay productos cargados.</div>
+        <div class="contenido-vacio-admin">No hay productos <?php echo $vista === 'inactivos' ? 'inactivos' : 'activos'; ?> para mostrar.</div>
     <?php else: ?>
         <div class="lista-admin">
             <?php foreach ($productos as $producto): ?>
                 <?php
                 $variantes = obtener_variantes_producto($conexion, (int) $producto['id_producto']);
-                $variantesConStock = array_values(array_filter($variantes, static function (array $variante): bool {
-                    return $variante['estado'] === 'activo' && (int) $variante['stock'] > 0;
+                $variantesActivas = array_values(array_filter($variantes, static function (array $variante): bool {
+                    return $variante['estado'] === 'activo';
+                }));
+                $variantesConStock = array_values(array_filter($variantesActivas, static function (array $variante): bool {
+                    return (int) $variante['stock'] > 0;
                 }));
                 $tallesConStock = array_map(static function (array $variante): string {
                     return (string) $variante['talle'];
                 }, $variantesConStock);
                 $imagen = obtener_ruta_imagen_producto($producto['imagen'] ?? null);
-                $estado = $producto['estado'] === 'disponible' ? 'Activo' : 'Inactivo';
+                $estado = (string) $producto['estado'] === 'disponible' ? 'Activo' : 'Inactivo';
                 ?>
                 <article class="fila-producto">
                     <div class="fila-producto__encabezado">
@@ -85,18 +140,28 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
 
                         <div class="acciones-fila producto-card__chips">
                             <a class="boton-terciario" href="/admin/producto_detalle.php?id=<?php echo (int) $producto['id_producto']; ?>">Ver producto</a>
-                            <a class="boton-terciario boton-terciario--azul" href="/admin/producto_formulario.php?id=<?php echo (int) $producto['id_producto']; ?>">Modificar</a>
-                            <form method="post" data-confirmar="¿Querés eliminar este producto? Esta acción puede dejarlo inactivo si existen pedidos.">
-                                <input type="hidden" name="accion" value="eliminar">
-                                <input type="hidden" name="id_producto" value="<?php echo (int) $producto['id_producto']; ?>">
-                                <button class="boton-terciario boton-terciario--rojo" type="submit">Eliminar</button>
-                            </form>
+                            <?php if ($vista === 'activos'): ?>
+                                <a class="boton-terciario boton-terciario--azul" href="/admin/producto_formulario.php?id=<?php echo (int) $producto['id_producto']; ?>">Modificar</a>
+                                <form method="post" data-confirmar="Queres dar de baja este producto? No se borrara el historial de pedidos.">
+                                    <input type="hidden" name="accion" value="dar_baja">
+                                    <input type="hidden" name="id_producto" value="<?php echo (int) $producto['id_producto']; ?>">
+                                    <input type="hidden" name="vista" value="<?php echo sanear_texto($vista); ?>">
+                                    <button class="boton-terciario boton-terciario--rojo" type="submit">Dar de baja</button>
+                                </form>
+                            <?php else: ?>
+                                <form method="post" data-confirmar="Queres volver a activar este producto y sus variantes?">
+                                    <input type="hidden" name="accion" value="activar">
+                                    <input type="hidden" name="id_producto" value="<?php echo (int) $producto['id_producto']; ?>">
+                                    <input type="hidden" name="vista" value="<?php echo sanear_texto($vista); ?>">
+                                    <button class="boton-terciario boton-terciario--azul" type="submit">Activar</button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="producto-card__chips">
-                        <span class="etiqueta etiqueta--verde"><?php echo $estado; ?></span>
-                        <span class="etiqueta etiqueta--azul"><?php echo count($variantesConStock) === 1 ? '1 variante' : count($variantesConStock) . ' variantes'; ?><?php echo $tallesConStock !== [] ? ' (' . sanear_texto(implode(', ', $tallesConStock)) . ')' : ''; ?></span>
+                        <span class="etiqueta <?php echo $vista === 'activos' ? 'etiqueta--verde' : 'etiqueta--rojo'; ?>"><?php echo $estado; ?></span>
+                        <span class="etiqueta etiqueta--azul"><?php echo count($variantesActivas) === 1 ? '1 variante activa' : count($variantesActivas) . ' variantes activas'; ?><?php echo $tallesConStock !== [] ? ' (' . sanear_texto(implode(', ', $tallesConStock)) . ')' : ''; ?></span>
                         <span class="etiqueta etiqueta--gris">Precio: <?php echo formatear_precio((float) $producto['precio']); ?></span>
                         <span class="etiqueta etiqueta--amarillo"><?php echo ((int) $producto['oferta'] === 1) ? 'Oferta' : 'Precio normal'; ?></span>
                     </div>

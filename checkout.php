@@ -144,7 +144,7 @@ if (es_post()) {
             foreach ($detallesCarrito as $detalle) {
                 $variante = obtener_variante_por_id($conexion, (int) $detalle['id_variante']);
 
-                if (!$variante || $variante['estado'] !== 'activo') {
+                if (!$variante || $variante['estado'] !== 'activo' || (string) ($variante['estado_producto'] ?? '') !== 'disponible') {
                     throw new RuntimeException('Una de las variantes del carrito ya no está disponible.');
                 }
 

@@ -23,6 +23,40 @@ if (!$producto) {
     redirigir('/admin/productos.php');
 }
 
+if (es_post()) {
+    $accion = limpiar_entrada((string) ($_POST['accion'] ?? ''));
+    $idVariante = (int) ($_POST['id_variante'] ?? 0);
+
+    if ($idVariante > 0 && in_array($accion, ['dar_baja_variante', 'activar_variante'], true)) {
+        $variante = obtener_variante_por_id($conexion, $idVariante);
+
+        if (!$variante || (int) $variante['id_producto'] !== $idProducto) {
+            guardar_flash('mensaje_error', 'La variante seleccionada no pertenece a este producto.');
+            redirigir('/admin/producto_detalle.php?id=' . $idProducto);
+        }
+
+        $estadoVariante = $accion === 'activar_variante' ? 'activo' : 'inactivo';
+        $sentenciaVariante = $conexion->prepare(
+            'UPDATE producto_variante
+             SET estado = :estado,
+                 fecha_actualizacion = NOW()
+             WHERE id_variante = :id_variante'
+        );
+        $sentenciaVariante->execute([
+            ':estado' => $estadoVariante,
+            ':id_variante' => $idVariante,
+        ]);
+
+        guardar_flash(
+            'mensaje_exito',
+            $accion === 'activar_variante'
+                ? 'Variante activada correctamente.'
+                : 'Variante dada de baja correctamente.'
+        );
+        redirigir('/admin/producto_detalle.php?id=' . $idProducto);
+    }
+}
+
 $variantes = obtener_variantes_producto($conexion, $idProducto);
 $imagen = obtener_ruta_imagen_producto($producto['imagen'] ?? null);
 $estadoProducto = (string) ($producto['estado'] ?? '') === 'disponible' ? 'Activo' : 'Inactivo';
@@ -109,6 +143,19 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
                             <div class="detalle-producto-admin__stock">
                                 <span class="etiqueta <?php echo $claseStock; ?>">Stock: <?php echo $stock; ?></span>
                                 <span class="etiqueta etiqueta--gris"><?php echo sanear_texto(ucfirst($estadoVariante)); ?></span>
+                                <?php if ($estadoVariante === 'activo'): ?>
+                                    <form method="post" data-confirmar="Queres dar de baja esta variante?">
+                                        <input type="hidden" name="accion" value="dar_baja_variante">
+                                        <input type="hidden" name="id_variante" value="<?php echo (int) $variante['id_variante']; ?>">
+                                        <button class="boton-terciario boton-terciario--rojo" type="submit">Dar de baja</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="post" data-confirmar="Queres activar esta variante?">
+                                        <input type="hidden" name="accion" value="activar_variante">
+                                        <input type="hidden" name="id_variante" value="<?php echo (int) $variante['id_variante']; ?>">
+                                        <button class="boton-terciario boton-terciario--azul" type="submit">Activar</button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                         </article>
                     <?php endforeach; ?>

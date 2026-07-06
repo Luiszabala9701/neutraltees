@@ -702,7 +702,7 @@ function obtener_stock_disponible_variante(PDO $conexion, int $idVariante): int
 {
     $variante = obtener_variante_por_id($conexion, $idVariante);
 
-    if (!$variante || $variante['estado'] !== 'activo') {
+    if (!$variante || $variante['estado'] !== 'activo' || (string) ($variante['estado_producto'] ?? '') !== 'disponible') {
         return 0;
     }
 
@@ -753,6 +753,7 @@ function obtener_variantes_con_producto(PDO $conexion): array
          FROM producto_variante v
          INNER JOIN producto p ON p.id_producto = v.id_producto
          WHERE v.estado = "activo"
+           AND p.estado = "disponible"
            AND v.sku IS NOT NULL
            AND v.sku <> ""
          ORDER BY p.nombre_producto ASC, v.talle ASC'

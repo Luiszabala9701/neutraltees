@@ -18,7 +18,7 @@ $datosVariante = [
 ];
 
 // Productos disponibles para que el administrador elija a cual sumar la variante.
-$productos = obtener_productos($conexion, '', false);
+$productos = obtener_productos($conexion, '', true);
 $tallesPorProducto = [];
 $sentenciaUltimoSku = $conexion->query(
     'SELECT sku

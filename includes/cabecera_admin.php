@@ -61,6 +61,7 @@ $menuCuentaAbierto = in_array($rutaActualAdmin, ['seguridad.php', 'ayuda.php'], 
                     <div class="menu-admin__subenlaces">
                         <a class="menu-admin__subenlace" href="/admin/producto_formulario.php">Alta producto</a>
                         <a class="menu-admin__subenlace" href="/admin/productos.php">Ver productos</a>
+                        <a class="menu-admin__subenlace" href="/admin/productos.php?vista=inactivos">Productos inactivos</a>
                         <a class="menu-admin__subenlace" href="/admin/agregar_variante.php">Agregar variante</a>
                     </div>
                 </details>

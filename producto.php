@@ -16,6 +16,11 @@ if (!$producto) {
     redirigir('/index.php');
 }
 
+if ((string) ($producto['estado'] ?? '') !== 'disponible') {
+    guardar_flash('mensaje_error', 'Este producto no esta disponible.');
+    redirigir('/index.php');
+}
+
 require_once __DIR__ . '/includes/cabecera_publica.php';
 
 $imagen = obtener_ruta_imagen_producto($producto['imagen'] ?? null);

@@ -14,7 +14,7 @@ if (es_post()) {
     $cantidad = (int) ($_POST['cantidad'] ?? 1);
     $variante = $idVariante > 0 ? obtener_variante_por_id($conexion, $idVariante) : null;
 
-    if (($accion === 'agregar' || $accion === 'actualizar') && (!$variante || $variante['estado'] !== 'activo' || (int) $variante['stock'] <= 0)) {
+    if (($accion === 'agregar' || $accion === 'actualizar') && (!$variante || $variante['estado'] !== 'activo' || (string) ($variante['estado_producto'] ?? '') !== 'disponible' || (int) $variante['stock'] <= 0)) {
         guardar_flash('mensaje_error', 'La variante seleccionada no tiene stock disponible.');
         redirigir('/carrito.php');
     }
