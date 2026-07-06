@@ -262,7 +262,12 @@ if (es_post()) {
             enviar_mail_pedido_creado($conexion, $idPedido);
             vaciar_carrito();
             $_SESSION['compra_confirmada_reciente'] = $idPedido;
-            guardar_flash('mensaje_exito', 'Pago realizado exitosamente.');
+            guardar_flash(
+                'mensaje_exito',
+                $datosCheckout['metodo_pago'] === 'efectivo'
+                    ? 'Pedido realizado exitosamente.'
+                    : 'Pago realizado exitosamente.'
+            );
             redirigir('/index.php');
         } catch (Throwable $ex) {
             if ($conexion->inTransaction()) {
@@ -400,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var spinner = document.querySelector('[data-pago-spinner]');
     var exito = document.querySelector('[data-pago-exito]');
     var boton = document.querySelector('[data-boton-confirmar-pago]');
+    var selectorMetodoPago = document.getElementById('metodo_pago');
     var envioHabilitado = false;
     var selectorCupon = document.getElementById('id_cupon');
     var totalCheckout = document.querySelector('[data-total-checkout]');
@@ -508,6 +514,23 @@ document.addEventListener('DOMContentLoaded', function () {
         boton.disabled = true;
         modal.classList.add('is-visible');
         modal.setAttribute('aria-hidden', 'false');
+        spinner.hidden = false;
+        exito.hidden = true;
+        titulo.textContent = 'Procesando pago...';
+
+        var metodoPago = selectorMetodoPago ? selectorMetodoPago.value : '';
+
+        if (metodoPago === 'efectivo') {
+            spinner.hidden = true;
+            exito.hidden = false;
+            titulo.textContent = 'Pedido realizado exitosamente';
+
+            window.setTimeout(function () {
+                envioHabilitado = true;
+                formulario.submit();
+            }, 1000);
+            return;
+        }
 
         window.setTimeout(function () {
             spinner.hidden = true;
