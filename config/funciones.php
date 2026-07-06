@@ -259,6 +259,14 @@ function clase_estado_pago(string $estadoPago): string
         : 'pedido-chip--pago-pendiente';
 }
 
+/**
+ * Indica si el pago ya fue confirmado y el pedido no deberia cancelarse.
+ */
+function pago_esta_confirmado(string $estadoPago): bool
+{
+    return in_array($estadoPago, ['recibido', 'pagado'], true);
+}
+
 function clase_metodo_pago(?string $metodoPago): string
 {
     return $metodoPago === 'mercado_pago'
@@ -283,9 +291,10 @@ function orden_estado_pedido(string $estado): int
  * Indica si un pedido todavia puede cancelarse.
  * Los entregados ya estan cerrados y los cancelados no deben repetirse.
  */
-function pedido_puede_cancelarse(string $estadoPedido): bool
+function pedido_puede_cancelarse(string $estadoPedido, string $estadoPago = ''): bool
 {
-    return !in_array($estadoPedido, ['entregado', 'cancelado'], true);
+    return !in_array($estadoPedido, ['entregado', 'cancelado'], true)
+        && !pago_esta_confirmado($estadoPago);
 }
 
 /**
@@ -877,8 +886,9 @@ function cancelar_pedido(PDO $conexion, int $idPedido, array $actor, string $tip
         }
 
         $estadoAnterior = (string) $pedido['estado_pedido'];
+        $estadoPago = (string) ($pedido['estado_pago'] ?? '');
 
-        if (!pedido_puede_cancelarse($estadoAnterior)) {
+        if (!pedido_puede_cancelarse($estadoAnterior, $estadoPago)) {
             throw new RuntimeException('Este pedido no se puede cancelar.');
         }
 

@@ -74,9 +74,11 @@ if (es_post()) {
             redirigir($rutaRetorno);
         }
 
-        $sentenciaPedidoActual = $conexion->prepare('SELECT estado_pedido FROM pedido WHERE id_pedido = :id_pedido LIMIT 1');
+        $sentenciaPedidoActual = $conexion->prepare('SELECT estado_pedido, estado_pago FROM pedido WHERE id_pedido = :id_pedido LIMIT 1');
         $sentenciaPedidoActual->execute([':id_pedido' => $idPedido]);
-        $estadoActual = (string) ($sentenciaPedidoActual->fetchColumn() ?: '');
+        $pedidoActual = $sentenciaPedidoActual->fetch(PDO::FETCH_ASSOC) ?: [];
+        $estadoActual = (string) ($pedidoActual['estado_pedido'] ?? '');
+        $estadoPagoActual = (string) ($pedidoActual['estado_pago'] ?? '');
 
         if ($estadoActual === '') {
             guardar_flash('mensaje_error', 'El pedido no existe.');
@@ -90,6 +92,11 @@ if (es_post()) {
 
         if (orden_estado_pedido($estadoPedido) < orden_estado_pedido($estadoActual)) {
             guardar_flash('mensaje_error', 'No se puede volver a un estado anterior del pedido.');
+            redirigir($rutaRetorno);
+        }
+
+        if ($estadoPedido === 'entregado' && !pago_esta_confirmado($estadoPagoActual)) {
+            guardar_flash('mensaje_error', 'No se puede entregar un pedido con pago pendiente.');
             redirigir($rutaRetorno);
         }
 
@@ -117,7 +124,7 @@ if (es_post()) {
             redirigir($rutaRetorno);
         }
 
-        if (!pedido_puede_cancelarse((string) ($pedidoActual['estado_pedido'] ?? ''))) {
+        if (!pedido_puede_cancelarse((string) ($pedidoActual['estado_pedido'] ?? ''), (string) ($pedidoActual['estado_pago'] ?? ''))) {
             guardar_flash('mensaje_error', 'Este pedido ya no se puede modificar.');
             redirigir($rutaRetorno);
         }
@@ -320,7 +327,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
                             $nombreCliente = trim((string) $pedido['nombre'] . ' ' . (string) $pedido['apellido']);
                             $estadoPedido = (string) $pedido['estado_pedido'];
                             $estadoPago = (string) $pedido['estado_pago'];
-                            $pagoConfirmado = in_array($estadoPago, ['recibido', 'pagado'], true);
+                            $pagoConfirmado = pago_esta_confirmado($estadoPago);
                             $cantidadUnidades = (int) $pedido['unidades_pedido'];
                             $pedidoSinAcciones = !pedido_puede_cancelarse($estadoPedido);
                             ?>
@@ -367,7 +374,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
                                                 <option value="pendiente" <?php echo $estadoPedido === 'pendiente' ? 'selected' : ''; ?> <?php echo orden_estado_pedido('pendiente') < orden_estado_pedido($estadoPedido) ? 'disabled' : ''; ?>>Pendiente</option>
                                                 <option value="preparando" <?php echo $estadoPedido === 'preparando' ? 'selected' : ''; ?> <?php echo orden_estado_pedido('preparando') < orden_estado_pedido($estadoPedido) ? 'disabled' : ''; ?>>En preparación</option>
                                                 <option value="preparado" <?php echo $estadoPedido === 'preparado' ? 'selected' : ''; ?> <?php echo orden_estado_pedido('preparado') < orden_estado_pedido($estadoPedido) ? 'disabled' : ''; ?>>Preparado</option>
-                                                <option value="entregado" <?php echo $estadoPedido === 'entregado' ? 'selected' : ''; ?> <?php echo orden_estado_pedido('entregado') < orden_estado_pedido($estadoPedido) ? 'disabled' : ''; ?>>Entregado</option>
+                                                <option value="entregado" <?php echo $estadoPedido === 'entregado' ? 'selected' : ''; ?> <?php echo (orden_estado_pedido('entregado') < orden_estado_pedido($estadoPedido) || !$pagoConfirmado) ? 'disabled' : ''; ?>>Entregado</option>
                                             </select>
                                         </form>
 
@@ -384,6 +391,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
                                             </form>
                                         <?php endif; ?>
 
+                                        <?php if (!$pagoConfirmado): ?>
                                         <form
                                             method="post"
                                             data-confirmar="¿Seguro que deseas cancelar esta orden?"
@@ -399,6 +407,7 @@ require_once __DIR__ . '/../includes/cabecera_admin.php';
                                             <input type="hidden" name="pagina" value="<?php echo $paginaActual; ?>">
                                             <button class="boton-terciario boton-terciario--rojo" type="submit">Cancelar</button>
                                         </form>
+                                        <?php endif; ?>
                                     </div>
                                     <?php endif; ?>
                                 </td>

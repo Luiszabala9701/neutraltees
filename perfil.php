@@ -105,7 +105,7 @@ require_once __DIR__ . '/includes/cabecera_publica.php';
                                         <span class="pedido-chip <?php echo clase_estado_pago($estadoPago); ?>"><?php echo sanear_texto(nombre_estado_pago($estadoPago)); ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <?php if (pedido_puede_cancelarse($estadoPedido)): ?>
+                                <?php if (pedido_puede_cancelarse($estadoPedido, $estadoPago)): ?>
                                     <form
                                         class="pedido__formulario-cancelar"
                                         method="post"
