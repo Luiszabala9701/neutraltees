@@ -68,7 +68,11 @@ if (es_post()) {
                 ':id_usuario' => (int) $usuario['id_usuario'],
             ]);
 
-            guardar_flash('mensaje_exito', 'Tu contrasena fue actualizada.');
+                        require_once __DIR__ . '/../config/funciones_mail.php';
+            $nombreCompleto = trim((string) $usuario['nombre'] . ' ' . (string) $usuario['apellido']);
+            $nombreCompleto = $nombreCompleto !== '' ? $nombreCompleto : 'Usuario';
+            enviar_mail_contrasena_actualizada((string) $usuario['mail'], $nombreCompleto);
+guardar_flash('mensaje_exito', 'Tu contrasena fue actualizada.');
             redirigir('/admin/seguridad.php');
         }
     }

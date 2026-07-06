@@ -98,6 +98,7 @@ if (es_post()) {
 
                 $conexion->commit();
                 unset($_SESSION['recuperacion_contrasena_pendiente']);
+                enviar_mail_contrasena_actualizada($mailUsuario, $nombreUsuario);
 
                 guardar_flash('mensaje_exito', 'Tu contraseña fue actualizada.');
 

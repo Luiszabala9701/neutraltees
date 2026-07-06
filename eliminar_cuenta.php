@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/config/conexion_DB.php';
+require_once __DIR__ . '/config/funciones_mail.php';
 $conexion = obtener_conexion_db();
 requiere_login();
 
@@ -21,6 +22,11 @@ if ($idUsuario <= 0) {
     redirigir('/login.php');
 }
 
+if (usuario_tiene_pedidos_activos($conexion, $idUsuario)) {
+    guardar_flash('mensaje_error', 'No podes eliminar tu cuenta porque tenes pedidos activos.');
+    redirigir(es_admin() ? '/admin/seguridad.php' : '/seguridad.php');
+}
+
 /* Si el administrador actual es el unico activo, no se permite la baja para
    evitar que el panel quede sin una cuenta con permisos de acceso. */
 if (es_admin()) {
@@ -33,7 +39,16 @@ if (es_admin()) {
     }
 }
 
+$nombreUsuario = trim((string) ($usuarioActual['nombre'] ?? '') . ' ' . (string) ($usuarioActual['apellido'] ?? ''));
+$nombreUsuario = $nombreUsuario !== '' ? $nombreUsuario : 'Usuario';
+$mailUsuario = (string) ($usuarioActual['mail'] ?? '');
+
 dar_baja_cuenta_usuario($conexion, $idUsuario);
+
+if ($mailUsuario !== '') {
+    enviar_mail_cuenta_dada_baja($mailUsuario, $nombreUsuario);
+}
+
 destruir_sesion_actual();
 
 if (session_status() === PHP_SESSION_NONE) {

@@ -112,6 +112,47 @@ function enviar_mail_recuperacion_contrasena(string $destinoEmail, string $desti
 }
 
 /**
+ * Avisa al usuario cuando su cuenta queda dada de baja.
+ */
+function enviar_mail_cuenta_dada_baja(string $destinoEmail, string $destinoNombre): bool
+{
+    $html = '
+        <h1>Cuenta dada de baja</h1>
+        <p>Hola ' . sanear_texto($destinoNombre) . ', te confirmamos que tu cuenta de NeutralTees fue dada de baja.</p>
+        <p>Desde este momento no vas a poder ingresar con ese correo.</p>
+        <p>Si crees que esto fue un error, podes contactarnos para revisar tu caso.</p>
+    ';
+
+    return enviar_mail(
+        $destinoEmail,
+        $destinoNombre,
+        'Cuenta dada de baja - NeutralTees',
+        $html,
+        'Tu cuenta de NeutralTees fue dada de baja. Si crees que fue un error, contactanos.'
+    );
+}
+
+/**
+ * Avisa al usuario que su contrasena fue modificada correctamente.
+ */
+function enviar_mail_contrasena_actualizada(string $destinoEmail, string $destinoNombre): bool
+{
+    $html = '
+        <h1>Contrasena actualizada</h1>
+        <p>Hola ' . sanear_texto($destinoNombre) . ', te confirmamos que la contrasena de tu cuenta NeutralTees fue actualizada correctamente.</p>
+        <p>Si no realizaste este cambio, contactanos cuanto antes.</p>
+    ';
+
+    return enviar_mail(
+        $destinoEmail,
+        $destinoNombre,
+        'Contrasena actualizada - NeutralTees',
+        $html,
+        'La contrasena de tu cuenta NeutralTees fue actualizada correctamente. Si no realizaste este cambio, contactanos.'
+    );
+}
+
+/**
  * Junta cabecera, cliente y lineas de un pedido para armar emails.
  */
 function obtener_pedido_para_mail(PDO $conexion, int $idPedido): ?array

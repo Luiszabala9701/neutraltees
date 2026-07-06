@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../config/conexion_DB.php';
+require_once __DIR__ . '/../config/funciones_mail.php';
 $conexion = obtener_conexion_db();
 requiere_admin();
 
@@ -52,7 +53,7 @@ if (es_post()) {
     $rutaRetorno = construir_ruta_usuarios($busqueda, $filtroRol, $filtroEstado, $paginaActual);
 
     if ($accion === 'cambiar_estado_usuario' && $idUsuario > 0) {
-        $sentenciaUsuario = $conexion->prepare('SELECT id_usuario, is_admin, activo FROM usuario WHERE id_usuario = :id_usuario LIMIT 1');
+        $sentenciaUsuario = $conexion->prepare('SELECT id_usuario, nombre, apellido, mail, is_admin, activo FROM usuario WHERE id_usuario = :id_usuario LIMIT 1');
         $sentenciaUsuario->execute([':id_usuario' => $idUsuario]);
         $usuarioObjetivo = $sentenciaUsuario->fetch(PDO::FETCH_ASSOC);
 
@@ -67,11 +68,25 @@ if (es_post()) {
         }
 
         $nuevoEstado = (int) $usuarioObjetivo['activo'] === 1 ? 0 : 1;
-        $sentencia = $conexion->prepare('UPDATE usuario SET activo = :activo, fecha_actualizacion = NOW() WHERE id_usuario = :id_usuario');
-        $sentencia->execute([
-            ':activo' => $nuevoEstado,
-            ':id_usuario' => $idUsuario,
-        ]);
+
+        if ($nuevoEstado === 0 && usuario_tiene_pedidos_activos($conexion, $idUsuario)) {
+            guardar_flash('mensaje_error', 'No podes dar de baja este usuario porque tiene pedidos activos.');
+            redirigir($rutaRetorno);
+        }
+
+        if ($nuevoEstado === 0) {
+            dar_baja_cuenta_usuario($conexion, $idUsuario);
+
+            $nombreUsuarioObjetivo = trim((string) $usuarioObjetivo['nombre'] . ' ' . (string) $usuarioObjetivo['apellido']);
+            $nombreUsuarioObjetivo = $nombreUsuarioObjetivo !== '' ? $nombreUsuarioObjetivo : 'Usuario';
+            enviar_mail_cuenta_dada_baja((string) $usuarioObjetivo['mail'], $nombreUsuarioObjetivo);
+        } else {
+            $sentencia = $conexion->prepare('UPDATE usuario SET activo = :activo, fecha_actualizacion = NOW() WHERE id_usuario = :id_usuario');
+            $sentencia->execute([
+                ':activo' => $nuevoEstado,
+                ':id_usuario' => $idUsuario,
+            ]);
+        }
 
         guardar_flash('mensaje_exito', $nuevoEstado === 0 ? 'Usuario dado de baja.' : 'Usuario reactivado.');
         redirigir($rutaRetorno);

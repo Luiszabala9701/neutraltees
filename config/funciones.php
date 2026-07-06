@@ -575,6 +575,22 @@ function validar_contrasena_segura(string $contrasena, string $campo = 'Contrase
     return $errores;
 }
 
+/**
+ * Indica si una cuenta tiene pedidos que todavia requieren seguimiento.
+ */
+function usuario_tiene_pedidos_activos(PDO $conexion, int $idUsuario): bool
+{
+    $sentencia = $conexion->prepare(
+        "SELECT COUNT(*)
+         FROM pedido
+         WHERE id_usuario = :id_usuario
+           AND estado_pedido IN ('pendiente', 'preparando', 'preparado', 'enviado')"
+    );
+    $sentencia->execute([':id_usuario' => $idUsuario]);
+
+    return (int) $sentencia->fetchColumn() > 0;
+}
+
 /* Helpers del carrito guardado en sesion. */
 function inicializar_carrito(): void
 {
