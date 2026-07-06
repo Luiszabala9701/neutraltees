@@ -38,6 +38,10 @@ function obtener_conexion_db(): PDO
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
+
+        /* Ajusta la hora de MySQL a Argentina para que NOW() no use UTC
+           en servidores de hosting. Cambiar el offset si se usa otro pais. */
+        $conexion->exec("SET time_zone = '-03:00'");
     } catch (Throwable $ex) {
         registrar_error_sistema('Error de conexion con MySQL', $ex->getMessage());
         http_response_code(500);
