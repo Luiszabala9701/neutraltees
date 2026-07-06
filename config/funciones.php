@@ -450,17 +450,21 @@ function invalidar_token_sesion_actual(PDO $conexion): void
         return;
     }
 
-    $sentencia = $conexion->prepare(
-        'UPDATE usuario
-         SET sesion_activa_token = NULL,
-             fecha_actualizacion = NOW()
-         WHERE id_usuario = :id_usuario
-           AND sesion_activa_token = :token'
-    );
-    $sentencia->execute([
-        ':id_usuario' => $idUsuario,
-        ':token' => $tokenSesion,
-    ]);
+    try {
+        $sentencia = $conexion->prepare(
+            'UPDATE usuario
+             SET sesion_activa_token = NULL,
+                 fecha_actualizacion = NOW()
+             WHERE id_usuario = :id_usuario
+               AND sesion_activa_token = :token'
+        );
+        $sentencia->execute([
+            ':id_usuario' => $idUsuario,
+            ':token' => $tokenSesion,
+        ]);
+    } catch (Throwable $ex) {
+        registrar_error_sistema('No se pudo invalidar el token de sesion', $ex->getMessage());
+    }
 }
 
 /**
