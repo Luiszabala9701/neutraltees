@@ -11,6 +11,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 	redirigir('/login.php');
 }
 
+$conexion = obtener_conexion_db();
 invalidar_token_sesion_actual($conexion);
 destruir_sesion_actual();
 redirigir('/login.php');

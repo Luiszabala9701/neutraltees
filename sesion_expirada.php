@@ -8,6 +8,7 @@
 require_once __DIR__ . '/config/conexion_DB.php';
 
 if (usuario_actual()) {
+    $conexion = obtener_conexion_db();
     invalidar_token_sesion_actual($conexion);
     destruir_sesion_actual();
 }
