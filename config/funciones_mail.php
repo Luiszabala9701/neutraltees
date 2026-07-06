@@ -90,14 +90,14 @@ function enviar_mail_verificacion(string $destinoEmail, string $destinoNombre, s
 }
 
 /**
- * Envia el codigo temporal para recuperar o cambiar la contrasena por mail.
+ * Envia el codigo temporal para recuperar o cambiar la contraseña por mail.
  */
 function enviar_mail_recuperacion_contrasena(string $destinoEmail, string $destinoNombre, string $codigo): bool
 {
     $html = '
-        <h1>Restablecer contrasena</h1>
-        <p>Hola ' . sanear_texto($destinoNombre) . ', recibimos una solicitud para cambiar tu contrasena.</p>
-        <p>Ingresa este codigo para crear una nueva contrasena:</p>
+        <h1>Restablecer contraseña</h1>
+        <p>Hola ' . sanear_texto($destinoNombre) . ', recibimos una solicitud para cambiar tu contraseña.</p>
+        <p>Ingresa este codigo para crear una nueva contraseña:</p>
         <p style="font-size: 28px; font-weight: bold; letter-spacing: 6px;">' . sanear_texto($codigo) . '</p>
         <p>Este codigo vence en 2 minutos. Si no pediste este cambio, ignora este mensaje.</p>
     ';
@@ -105,9 +105,9 @@ function enviar_mail_recuperacion_contrasena(string $destinoEmail, string $desti
     return enviar_mail(
         $destinoEmail,
         $destinoNombre,
-        'Codigo para restablecer contrasena - NeutralTees',
+        'Codigo para restablecer contraseña - NeutralTees',
         $html,
-        'Tu codigo para restablecer la contrasena es: ' . $codigo . '. Vence en 2 minutos.'
+        'Tu codigo para restablecer la contraseña es: ' . $codigo . '. Vence en 2 minutos.'
     );
 }
 
@@ -133,22 +133,43 @@ function enviar_mail_cuenta_dada_baja(string $destinoEmail, string $destinoNombr
 }
 
 /**
- * Avisa al usuario que su contrasena fue modificada correctamente.
+ * Avisa al usuario cuando su cuenta vuelve a estar activa.
+ */
+function enviar_mail_cuenta_reactivada(string $destinoEmail, string $destinoNombre): bool
+{
+    $html = '
+        <h1>Cuenta reactivada</h1>
+        <p>Hola ' . sanear_texto($destinoNombre) . ', te confirmamos que tu cuenta de NeutralTees fue reactivada.</p>
+        <p>Ya podes volver a ingresar con tu correo y contraseña.</p>
+        <p>Gracias por seguir eligiendonos.</p>
+    ';
+
+    return enviar_mail(
+        $destinoEmail,
+        $destinoNombre,
+        'Cuenta reactivada - NeutralTees',
+        $html,
+        'Tu cuenta de NeutralTees fue reactivada. Ya podes volver a ingresar con tu correo y contraseña.'
+    );
+}
+
+/**
+ * Avisa al usuario que su contraseña fue modificada correctamente.
  */
 function enviar_mail_contrasena_actualizada(string $destinoEmail, string $destinoNombre): bool
 {
     $html = '
-        <h1>Contrasena actualizada</h1>
-        <p>Hola ' . sanear_texto($destinoNombre) . ', te confirmamos que la contrasena de tu cuenta NeutralTees fue actualizada correctamente.</p>
+        <h1>Contraseña actualizada</h1>
+        <p>Hola ' . sanear_texto($destinoNombre) . ', te confirmamos que la contraseña de tu cuenta NeutralTees fue actualizada correctamente.</p>
         <p>Si no realizaste este cambio, contactanos cuanto antes.</p>
     ';
 
     return enviar_mail(
         $destinoEmail,
         $destinoNombre,
-        'Contrasena actualizada - NeutralTees',
+        'Contraseña actualizada - NeutralTees',
         $html,
-        'La contrasena de tu cuenta NeutralTees fue actualizada correctamente. Si no realizaste este cambio, contactanos.'
+        'La contraseña de tu cuenta NeutralTees fue actualizada correctamente. Si no realizaste este cambio, contactanos.'
     );
 }
 

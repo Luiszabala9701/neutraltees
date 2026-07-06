@@ -86,6 +86,10 @@ if (es_post()) {
                 ':activo' => $nuevoEstado,
                 ':id_usuario' => $idUsuario,
             ]);
+
+            $nombreUsuarioObjetivo = trim((string) $usuarioObjetivo['nombre'] . ' ' . (string) $usuarioObjetivo['apellido']);
+            $nombreUsuarioObjetivo = $nombreUsuarioObjetivo !== '' ? $nombreUsuarioObjetivo : 'Usuario';
+            enviar_mail_cuenta_reactivada((string) $usuarioObjetivo['mail'], $nombreUsuarioObjetivo);
         }
 
         guardar_flash('mensaje_exito', $nuevoEstado === 0 ? 'Usuario dado de baja.' : 'Usuario reactivado.');
