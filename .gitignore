@@ -6,6 +6,11 @@
 logs/
 *.log
 
+# Archivos temporales generados por PHPUnit
+tests/.phpunit.cache/
+tests/.tmp_sessions/
+outputs/
+
 # Paquetes comprimidos para despliegue
 *.zip
 *.rar
